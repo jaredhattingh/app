@@ -14,12 +14,9 @@ var db = require('knex')({
     host : '127.0.0.1',
     user : '',
     password : '',
-    database : 'app'
+    database : 'anodamineapp'
   }
 });
-
-// Controllers (db queries)
-const main = require('./controllers/main')
 
 // App
 const app = express()
@@ -42,11 +39,46 @@ app.use(morgan('tiny')) // logger
 
 
 // API
-app.get('/', (req, res) => res.send(''))
-app.get('/inventory', (req, res) => main.getTableData(req, res, db))
-app.post('/inventory', (req, res) => main.postTableData(req, res, db))
-app.put('/inventory', (req, res) => main.putTableData(req, res, db))
-app.delete('/inventory', (req, res) => main.deleteTableData(req, res, db))
+
+
+
+//where I will get inventory from db
+app.get('/inventory', (req, res) => {
+  console.log('Getting inventory!');
+  db.select().from('inventory').orderBy('inventory_id').then(function(data) {
+    res.send(data);
+  });
+});
+
+//where I will add item to inventory
+app.post('/inventory', (req, res) => {
+  db.insert(req.body).returning('*').into('inventory').then(function(data) {
+    res.send(data);
+  });
+});
+
+//where I will update item in inventory
+app.put('/inventory', (req, res) => {
+  const { inventory_id, photo, name, description, category, sku, material, vendor_id, quantity, price, status } = req.body
+  db('inventory').where({inventory_id}).update({photo, name, description, category, sku, material, vendor_id, quantity, price, status})
+    .returning('*')
+    .then(item => {
+      res.json(item)
+    })
+    .catch(err => res.status(400).json({dbError: 'db error'}))
+});
+
+//where I delete an item from the inventory_id
+app.delete('/inventory', (req, res) => {
+  const { inventory_id } = req.body
+  db('inventory').where({inventory_id}).del()
+    .then(() => {
+      res.json({delete: 'true'})
+    })
+    .catch(err => res.status(400).json({dbError: 'db error'}))
+});
+
+
 
 
 // App Server Connection
