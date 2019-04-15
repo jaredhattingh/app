@@ -38,50 +38,20 @@ app.use(bodyParser.json())
 app.use(morgan('tiny')) // logger
 
 
+// Controllers - aka, the db queries
+const main = require('./controllers/main')
+
 // API
 
-
-
-//where I will get inventory from db
-app.get('/inventory', (req, res) => {
-  console.log('Getting inventory!');
-  db.select().from('inventory').orderBy('inventory_id').then(function(data) {
-    res.send(data);
-  });
-});
-
-//where I will add item to inventory
-app.post('/inventory', (req, res) => {
-  db.insert(req.body).returning('*').into('inventory').then(function(data) {
-    res.send(data);
-  });
-});
-
-//where I will update item in inventory
-app.put('/inventory', (req, res) => {
-  const { inventory_id, photo, name, description, category, sku, material, vendor_id, quantity, price, status } = req.body
-  db('inventory').where({inventory_id}).update({photo, name, description, category, sku, material, vendor_id, quantity, price, status})
-    .returning('*')
-    .then(item => {
-      res.json(item)
-    })
-    .catch(err => res.status(400).json({dbError: 'db error'}))
-});
-
-//where I delete an item from the inventory_id
-app.delete('/inventory', (req, res) => {
-  const { inventory_id } = req.body
-  db('inventory').where({inventory_id}).del()
-    .then(() => {
-      res.json({delete: 'true'})
-    })
-    .catch(err => res.status(400).json({dbError: 'db error'}))
-});
-
-
+// App Routes - Auth
+app.get('/', (req, res) => res.send('RUNNING!'))
+app.get('/inventory', (req, res) => main.getInventoryTableData(req, res, db))
+app.post('/inventory', (req, res) => main.postInventoryTableData(req, res, db))
+app.put('/inventory', (req, res) => main.putInventoryTableData(req, res, db))
+app.delete('/inventory', (req, res) => main.deleteInventoryTableData(req, res, db))
 
 
 // App Server Connection
 app.listen(process.env.PORT || 3000, () => {
   console.log(`app is running on port ${process.env.PORT || 3000}`)
-})
+});
